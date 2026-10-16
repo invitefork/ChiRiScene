@@ -1,0 +1,121 @@
+# mt6897/soc.yaml: [topology] [freq] [cpu_governors]
+# SoC 硬件基线：编译期嵌入（同 feature.yaml，防篡改、磁盘不落盘）。
+# 定位 = 运行时 sysfs 探测的兜底与校准基准，不是调优输入；改动需重编。
+# 机型：Dimensity 8300 Ultra（MT6897）/ Poco X6 Pro（duchamp），Android 15，GKI 6.1。
+soc: "mt6897"
+
+# [topology] 核心组 CPU ID 区间（左闭右开），common.rs::chiri_core_ranges 的数据源。
+# 真机 policy 布局：policy0 = CPU0-3（A510）/ policy4 = CPU4-6（A715）/ policy7 = CPU7（A715 prime），
+# 即 4+3+1 三 policy，与 zumapro 同形（高通 8550 是 3+4+1，勿混）。
+topology:
+  little: { start: 0, end: 4 }
+  big: { start: 4, end: 7 }
+  prime: { start: 7, end: 8 }
+
+# [capacity] TODO: 真机 cpu_capacity 未采样，暂不填（运行时优先读 sysfs，本段只是读不到时的兜底）。
+# 影响面：仅帕累托前沿的需求折算与 FDP，本机无 frontier_policy，当前不受影响。
+# 采样命令：for c in 0 4 7; do cat /sys/devices/system/cpu/cpu$c/cpu_capacity; done
+
+# [freq] 频率档位兜底（kHz 升序；scaling_available_frequencies 读不到时用）。
+# 来源：真机 scaling_available_frequencies 输出（升序重排）。
+# 写 scaling_max_freq 前须 floor 对齐到表内档位（内核 clamp 向下取最近档）。
+freq_khz:
+  # little / policy0：18 档 480000-2200000
+  little:
+    [
+      480000,
+      600000,
+      700000,
+      800000,
+      900000,
+      1000000,
+      1100000,
+      1200000,
+      1300000,
+      1400000,
+      1500000,
+      1600000,
+      1700000,
+      1800000,
+      1900000,
+      2000000,
+      2100000,
+      2200000,
+    ]
+  # big / policy4：30 档 400000-3200000
+  big:
+    [
+      400000,
+      500000,
+      600000,
+      700000,
+      800000,
+      900000,
+      1000000,
+      1100000,
+      1200000,
+      1300000,
+      1400000,
+      1500000,
+      1600000,
+      1700000,
+      1800000,
+      1900000,
+      2000000,
+      2100000,
+      2200000,
+      2300000,
+      2400000,
+      2500000,
+      2600000,
+      2660000,
+      2800000,
+      2850000,
+      2900000,
+      3000000,
+      3100000,
+      3200000,
+    ]
+  # prime / policy7：31 档 400000-3350000
+  prime:
+    [
+      400000,
+      500000,
+      600000,
+      700000,
+      800000,
+      900000,
+      1000000,
+      1100000,
+      1200000,
+      1300000,
+      1400000,
+      1500000,
+      1600000,
+      1700000,
+      1800000,
+      1900000,
+      2000000,
+      2100000,
+      2200000,
+      2300000,
+      2400000,
+      2500000,
+      2600000,
+      2700000,
+      2800000,
+      2900000,
+      3000000,
+      3050000,
+      3100000,
+      3200000,
+      3350000,
+    ]
+
+# [cpu_governors] cpufreq 调速器优先级（从左到右）：启动时逐 policy 读
+# scaling_available_governors，取第一个该 policy 可用的作为「默认调速器」。
+# 本机可用：sugov_ext（联发科自家）/ conservative / ondemand / powersave / performance / schedutil。
+# 首轮取 schedutil 打头：项目在 schedutil 上验证最充分；sugov_ext 带厂商钩子，可能与 CLG 的
+# 上限写入互相打架，作为第二位备选（若想贴近出厂行为，可把 sugov_ext 提到首位再对比）。
+# performance 是兜底，放最后一位防止前面全部不可用。
+cpu_governors: [schedutil, sugov_ext, performance]
