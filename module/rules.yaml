@@ -8,6 +8,7 @@ dynamic_enabled: true
 global_mode: "default"
 
 app_modes:
+  com.tencent.ig: boost
 
 # [ignored-apps]
 ignored_apps:
