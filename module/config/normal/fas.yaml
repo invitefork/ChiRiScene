@@ -19,3 +19,4 @@ fas:
     com.tencent.lolm: lolm
     # 三角洲行动（UE4 战术射击）
     com.tencent.tmgp.dfm: dfm
+    com.tencent.ig: pubg
